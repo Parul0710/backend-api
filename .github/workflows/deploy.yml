@@ -1,0 +1,43 @@
+name: Deploy Backend API
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Step 1: Check out the code
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    # Step 2: Install dependencies
+    - name: Install Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+    
+    - name: Install dependencies
+      run: npm install
+
+    # Step 3: Deploy to the virtual machine
+    - name: Deploy via SSH
+      env:
+        HOST: ${{ secrets.VM_HOST }}
+        USER: ${{ secrets.VM_USER }}
+        PRIVATE_KEY: ${{ secrets.VM_PRIVATE_KEY }}
+      run: |
+        echo "${PRIVATE_KEY}" > private_key.pem
+        chmod 600 private_key.pem
+        ssh -i private_key.pem ${USER}@${HOST} << 'EOF'
+        sudo pkill -f "node" || true
+        mkdir -p /var/www/backend-api
+        sudo apt update
+        sudo apt install -y nodejs npm
+        cd /var/www/backend-api
+        rm -rf *
+        exit
+        EOF
